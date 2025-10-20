@@ -1,0 +1,116 @@
+<?php
+
+namespace app\controllers;
+
+use app\models\ItemModel;
+use flight\Engine;
+
+class ItemsController
+{
+	protected Engine $app;
+	protected ItemModel $model;
+
+	public function __construct(Engine $app)
+	{
+		$this->app = $app;
+		$this->model = new ItemModel($app);
+	}
+
+	public function page()
+	{
+		$this->app->render('items', [ 'nonce' => $this->app->get('csp_nonce') ]);
+	}
+
+	public function index()
+	{
+		$this->app->json($this->model->all());
+	}
+
+	public function show($id)
+	{
+		$item = $this->model->find((int)$id);
+		if (!$item) {
+			$this->app->json(['error' => 'Not found'], 404);
+			return;
+		}
+		$this->app->json($item);
+	}
+
+	public function create()
+	{
+		$data = $this->input();
+		$errors = $this->validate($data);
+		if ($errors) {
+			$this->app->json(['errors' => $errors], 400);
+			return;
+		}
+		$item = $this->model->create([
+			'name' => trim($data['name']),
+			'quantity' => (int)$data['quantity'],
+			'note' => isset($data['note']) ? trim($data['note']) : ''
+		]);
+		$this->app->json($item, 201);
+	}
+
+	public function update($id)
+	{
+		$id = (int)$id;
+		if (!$this->model->find($id)) {
+			$this->app->json(['error' => 'Not found'], 404);
+			return;
+		}
+		$data = $this->input();
+		$errors = $this->validate($data);
+		if ($errors) {
+			$this->app->json(['errors' => $errors], 400);
+			return;
+		}
+		$item = $this->model->update($id, [
+			'name' => trim($data['name']),
+			'quantity' => (int)$data['quantity'],
+			'note' => isset($data['note']) ? trim($data['note']) : ''
+		]);
+		$this->app->json($item);
+	}
+
+	public function delete($id)
+	{
+		$id = (int)$id;
+		if (!$this->model->find($id)) {
+			$this->app->json(['error' => 'Not found'], 404);
+			return;
+		}
+		$this->model->delete($id);
+		$this->app->halt(204);
+	}
+
+	protected function input(): array
+	{
+		$raw = $this->app->request()->getBody();
+		if ($raw) {
+			$decoded = json_decode($raw, true);
+			if (is_array($decoded)) {
+				return $decoded;
+			}
+		}
+		return $this->app->request()->data->getData();
+	}
+
+	protected function validate(array $data): array
+	{
+		$errors = [];
+		$name = isset($data['name']) ? trim((string)$data['name']) : '';
+		$qty = isset($data['quantity']) ? (int)$data['quantity'] : null;
+		$note = isset($data['note']) ? trim((string)$data['note']) : '';
+		if ($name === '' || strlen($name) > 100) {
+			$errors['name'] = 'name required, max 100';
+		}
+		if (!is_int($qty) || $qty < 0) {
+			$errors['quantity'] = 'quantity must be >= 0';
+		}
+		if (strlen($note) > 1000) {
+			$errors['note'] = 'note too long';
+		}
+		return $errors;
+	}
+}
