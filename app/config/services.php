@@ -2,9 +2,9 @@
 
 use flight\Engine;
 use flight\database\PdoWrapper;
-use flight\debug\database\PdoQueryCapture;
-use flight\debug\tracy\TracyExtensionLoader;
 use Tracy\Debugger;
+
+$ds = DIRECTORY_SEPARATOR;
 
 /*********************************************
  *         FlightPHP Service Setup           *
@@ -17,24 +17,6 @@ use Tracy\Debugger;
  **********************************************/
 
 
-
-/*********************************************
- *           Session Service Setup           *
- *********************************************
- * To enable sessions in FlightPHP, register the session service.
- * Docs: https://docs.flightphp.com/awesome-plugins/session
- *
- * Example:
- *   $app->register('session', \flight\Session::class, [
- *       [
- *           'prefix' 		=> 'flight_session_', 	  // Prefix for the session cookie
- *           'save_path'    => 'path/to/my/sessions', // Path to save session files
- *           // ...other options...
- *       ]
- *   ]);
- *
- * For advanced options, see the plugin documentation above.
- **********************************************/
 
 /*********************************************
  *           Tracy Debugger Setup            *
@@ -61,34 +43,22 @@ use Tracy\Debugger;
  *
  * For more options, see https://tracy.nette.org/en/configuration
  **********************************************/
-Debugger::enable(); // Auto-detects environment
-// Debugger::enable(Debugger::Development); // Explicitly set environment
-// Debugger::enable('23.75.345.200'); // Restrict debug bar to specific IPs
+Debugger::enable(Debugger::Production); // Explicitly set environment
+Debugger::$showBar = false; // Disable debug bar to avoid loading incompatible PdoQueryCapture
 Debugger::$logDirectory = __DIR__ . $ds . '..' . $ds . 'log'; // Log directory
 Debugger::$strictMode = true; // Show all errors (set to E_ALL & ~E_DEPRECATED for less noise)
 // Debugger::$maxLen = 1000; // Max length of dumped variables (default: 150)
 // Debugger::$maxDepth = 5; // Max depth of dumped structures (default: 3)
 // Debugger::$editor = 'vscode'; // Enable clickable file links in debug bar
 // Debugger::$email = 'your@email.com'; // Send error notifications
-if (Debugger::$showBar === true && php_sapi_name() !== 'cli') {
-	(new TracyExtensionLoader($app)); // Load FlightPHP Tracy extensions
-}
 
 /**********************************************
  *           Database Service Setup           *
  **********************************************/
-// Uncomment and configure the following for your database:
-
-// MySQL Example:
-// $dsn = 'mysql:host=' . $config['database']['host'] . ';dbname=' . $config['database']['dbname'] . ';charset=utf8mb4';
-
-// SQLite Example:
-// $dsn = 'sqlite:' . $config['database']['file_path'];
-
-// Register Flight::db() service
-// In development, use PdoQueryCapture to log queries; in production, use PdoWrapper for performance.
-// $pdoClass = Debugger::$showBar === true ? PdoQueryCapture::class : PdoWrapper::class;
-// $app->register('db', $pdoClass, [ $dsn, $config['database']['user'] ?? null, $config['database']['password'] ?? null ]);
+$sqlitePath = $config['database']['file_path'] ?? (__DIR__ . $ds . '..' . $ds . 'database.sqlite');
+$dsn = 'sqlite:' . $sqlitePath;
+$options = [ \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC ];
+$app->register('db', PdoWrapper::class, [ $dsn, null, null, $options ]);
 
 /**********************************************
  *         Third-Party Integrations           *
