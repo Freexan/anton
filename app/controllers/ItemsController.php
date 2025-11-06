@@ -47,6 +47,8 @@ class ItemsController
 		}
 		$item = $this->model->create([
 			'name' => trim($data['name']),
+			'sku' => trim($data['sku']),
+			'price' => round((float)$data['price'], 2),
 			'quantity' => (int)$data['quantity'],
 			'note' => isset($data['note']) ? trim($data['note']) : ''
 		]);
@@ -70,6 +72,8 @@ class ItemsController
 		}
 		$item = $this->model->update($id, [
 			'name' => trim($data['name']),
+			'sku' => trim($data['sku']),
+			'price' => round((float)$data['price'], 2),
 			'quantity' => (int)$data['quantity'],
 			'note' => isset($data['note']) ? trim($data['note']) : ''
 		]);
@@ -103,11 +107,19 @@ class ItemsController
 	{
 		$errors = [];
 		$name = isset($data['name']) ? trim((string)$data['name']) : '';
+		$sku = isset($data['sku']) ? trim((string)$data['sku']) : '';
+		$priceRaw = $data['price'] ?? null;
 		$qtyRaw = $data['quantity'] ?? null;
 		$note = isset($data['note']) ? trim((string)$data['note']) : '';
 
 		if ($name === '' || strlen($name) > 100) {
 			$errors['name'] = 'name required, max 100';
+		}
+		if ($sku === '' || strlen($sku) > 50) {
+			$errors['sku'] = 'sku required, max 50';
+		}
+		if ($priceRaw === null || $priceRaw === '' || !is_numeric($priceRaw) || (float)$priceRaw < 0) {
+			$errors['price'] = 'price must be number >= 0';
 		}
 		// quantity must be provided and be an integer >= 0 (reject non-numeric inputs)
 		if ($qtyRaw === null || $qtyRaw === '' || !is_numeric($qtyRaw) || (int)$qtyRaw < 0 || (string)(int)$qtyRaw !== (string)trim((string)$qtyRaw)) {
