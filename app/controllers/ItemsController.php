@@ -9,6 +9,7 @@ class ItemsController
 {
 	protected Engine $app;
 	protected ItemModel $model;
+	private const ERR_NOT_FOUND = 'Not found';
 
 	public function __construct(Engine $app)
 	{
@@ -30,7 +31,7 @@ class ItemsController
 	{
 		$item = $this->model->find((int)$id);
 		if (!$item) {
-			$this->app->json(['error' => 'Not found'], 404);
+			$this->app->json(['error' => self::ERR_NOT_FOUND], 404);
 			return;
 		}
 		$this->app->json($item);
@@ -49,6 +50,8 @@ class ItemsController
 			'quantity' => (int)$data['quantity'],
 			'note' => isset($data['note']) ? trim($data['note']) : ''
 		]);
+		// Set Location header for the created resource
+		$this->app->response()->header('Location', '/entities/' . $item['id']);
 		$this->app->json($item, 201);
 	}
 
@@ -56,7 +59,7 @@ class ItemsController
 	{
 		$id = (int)$id;
 		if (!$this->model->find($id)) {
-			$this->app->json(['error' => 'Not found'], 404);
+			$this->app->json(['error' => self::ERR_NOT_FOUND], 404);
 			return;
 		}
 		$data = $this->input();
@@ -77,7 +80,7 @@ class ItemsController
 	{
 		$id = (int)$id;
 		if (!$this->model->find($id)) {
-			$this->app->json(['error' => 'Not found'], 404);
+			$this->app->json(['error' => self::ERR_NOT_FOUND], 404);
 			return;
 		}
 		$this->model->delete($id);
@@ -100,13 +103,15 @@ class ItemsController
 	{
 		$errors = [];
 		$name = isset($data['name']) ? trim((string)$data['name']) : '';
-		$qty = isset($data['quantity']) ? (int)$data['quantity'] : null;
+		$qtyRaw = $data['quantity'] ?? null;
 		$note = isset($data['note']) ? trim((string)$data['note']) : '';
+
 		if ($name === '' || strlen($name) > 100) {
 			$errors['name'] = 'name required, max 100';
 		}
-		if (!is_int($qty) || $qty < 0) {
-			$errors['quantity'] = 'quantity must be >= 0';
+		// quantity must be provided and be an integer >= 0 (reject non-numeric inputs)
+		if ($qtyRaw === null || $qtyRaw === '' || !is_numeric($qtyRaw) || (int)$qtyRaw < 0 || (string)(int)$qtyRaw !== (string)trim((string)$qtyRaw)) {
+			$errors['quantity'] = 'quantity must be integer >= 0';
 		}
 		if (strlen($note) > 1000) {
 			$errors['note'] = 'note too long';
