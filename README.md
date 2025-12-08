@@ -3,18 +3,21 @@
 Goal: minimal project with a model, SQL migration, REST API and a plain HTML page (no CSS).
 
 ## Run (Docker Compose)
-1. Install Docker and Docker Compose.
-2. In project root:
+1. Install Docker Desktop: https://www.docker.com/products/docker-desktop
+2. Start Docker Desktop
+3. Double-click `start.bat` (Windows) or run:
 ```
-docker compose down --remove-orphans
-docker compose build
 docker compose up -d
 ```
-3. Run migrations (creates/updates DB):
+Migrations run automatically. Browser opens at http://localhost:8080/items
+
+To stop:
 ```
-docker compose exec flight php vendor/bin/runway db:migrate
+docker compose down
 ```
-4. Open in browser:
+or double-click `stop.bat` (Windows)
+
+URLs:
 - API: http://localhost:8080/entities
 - UI:  http://localhost:8080/items
 
@@ -38,7 +41,7 @@ php tools\smoke.php http://localhost:8080
 ```
 - Docker:
 ```
-docker compose exec flight php tools/smoke.php http://localhost:8080
+docker compose exec anton-app php tools/smoke.php http://localhost:8080
 ```
 The script performs list → create → detail → update → delete → detail(404) and prints OK/FAIL. In Part B it includes sku and price.
 

@@ -1,11 +1,22 @@
+
 services:
-  flight:
-    build: .
+  anton-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: anton-flightphp
     working_dir: /var/www
-    command: php -S 0.0.0.0:8080 -t public
     environment:
-      docker: "true"
+      DOCKER: "true"
+      PHP_ENV: "development"
     ports:
       - "8080:8080"
     volumes:
       - .:/var/www
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo 'OK';"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
